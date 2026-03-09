@@ -1,0 +1,79 @@
+@namespace MxUI.Core.Components
+
+<div class="@Class" @attributes="AdditionalAttributes">
+    @* Tab Headers *@
+    <div class="border-b border-neutral-200">
+        <nav class="flex gap-0 -mb-px" role="tablist">
+            @foreach (var tab in _tabs)
+            {
+                var isActive = tab == _activeTab;
+                <button role="tab"
+                        aria-selected="@isActive"
+                        class="@GetTabHeaderClasses(isActive)"
+                        @onclick="() => SetActiveTab(tab)">
+                    @if (tab.Icon != null)
+                    {
+                        <span class="mr-2">@tab.Icon</span>
+                    }
+                    @tab.Title
+                    @if (tab.BadgeContent != null)
+                    {
+                        <span class="ml-2">@tab.BadgeContent</span>
+                    }
+                </button>
+            }
+        </nav>
+    </div>
+
+    @* Tab Content *@
+    <div class="@ContentClass">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback<int> ActiveIndexChanged { get; set; }
+    [Parameter] public int ActiveIndex { get; set; } = 0;
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string ContentClass { get; set; } = "py-4";
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    internal List<MxTab> _tabs = new();
+    private MxTab? _activeTab;
+
+    internal void RegisterTab(MxTab tab)
+    {
+        _tabs.Add(tab);
+        if (_tabs.Count - 1 == ActiveIndex)
+        {
+            _activeTab = tab;
+            tab.SetActive(true);
+        }
+        StateHasChanged();
+    }
+
+    internal void UnregisterTab(MxTab tab)
+    {
+        _tabs.Remove(tab);
+        StateHasChanged();
+    }
+
+    private async Task SetActiveTab(MxTab tab)
+    {
+        if (_activeTab == tab) return;
+        _activeTab?.SetActive(false);
+        _activeTab = tab;
+        tab.SetActive(true);
+        await ActiveIndexChanged.InvokeAsync(_tabs.IndexOf(tab));
+    }
+
+    private string GetTabHeaderClasses(bool isActive)
+    {
+        var baseClasses = "px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-fast whitespace-nowrap";
+        return isActive
+            ? $"{baseClasses} border-primary-600 text-primary-600"
+            : $"{baseClasses} border-transparent text-content-muted hover:text-content-secondary hover:border-neutral-300";
+    }
+}

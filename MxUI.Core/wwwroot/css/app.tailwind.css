@@ -1,0 +1,139 @@
+/* MxUI - Tailwind CSS Input File */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────
+   Base Layer: Reset & Global Defaults
+   ───────────────────────────────────────── */
+@layer base {
+    *,
+    *::before,
+    *::after {
+        border-color: var(--mx-border-default);
+    }
+
+    body {
+        font-family: var(--mx-font-family);
+        font-size: var(--mx-text-base);
+        color: var(--mx-text-primary);
+        background-color: var(--mx-bg-base);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Smooth theme transitions */
+    .mx-app {
+        transition: background-color var(--mx-transition-base),
+                    color var(--mx-transition-base);
+    }
+}
+
+/* ─────────────────────────────────────────
+   Component Layer: MxUI Component Styles
+   ───────────────────────────────────────── */
+@layer components {
+    /* Button Base */
+    .mx-btn {
+        @apply inline-flex items-center justify-center gap-2
+               font-medium transition-all duration-base
+               focus-visible:outline-none focus-visible:ring-2 
+               focus-visible:ring-primary-500 focus-visible:ring-offset-2
+               disabled:pointer-events-none disabled:opacity-50
+               select-none;
+    }
+
+    /* Input Base */
+    .mx-input {
+        @apply w-full rounded-md border border-neutral-300 
+               bg-surface-base px-3 py-2 text-sm
+               placeholder:text-content-muted
+               focus:outline-none focus:ring-2 focus:ring-primary-500 
+               focus:border-primary-500
+               disabled:bg-surface-muted disabled:cursor-not-allowed
+               transition-all duration-fast;
+    }
+
+    /* Card Base */
+    .mx-card {
+        @apply rounded-xl bg-surface-base border border-neutral-200
+               shadow-sm transition-shadow duration-base;
+    }
+
+    .mx-card-hover {
+        @apply mx-card hover:shadow-md hover:border-primary-200 cursor-pointer;
+    }
+
+    /* Badge Base */
+    .mx-badge {
+        @apply inline-flex items-center rounded-full px-2.5 py-0.5
+               text-xs font-medium transition-colors duration-fast;
+    }
+
+    /* Table Base */
+    .mx-table {
+        @apply w-full text-sm text-left;
+    }
+
+    .mx-table thead {
+        @apply bg-surface-muted border-b border-neutral-200;
+    }
+
+    .mx-table th {
+        @apply px-4 py-3 font-semibold text-content-secondary 
+               uppercase tracking-wider text-xs;
+    }
+
+    .mx-table td {
+        @apply px-4 py-3 border-b border-neutral-100;
+    }
+
+    .mx-table tbody tr {
+        @apply hover:bg-surface-muted transition-colors duration-fast;
+    }
+
+    /* Scrollbar Styling */
+    .mx-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .mx-scrollbar::-webkit-scrollbar-track {
+        background: var(--mx-bg-muted);
+        border-radius: var(--mx-radius-full);
+    }
+
+    .mx-scrollbar::-webkit-scrollbar-thumb {
+        background: var(--mx-neutral-300);
+        border-radius: var(--mx-radius-full);
+    }
+
+    .mx-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: var(--mx-neutral-400);
+    }
+}
+
+/* ─────────────────────────────────────────
+   Utility Layer: Custom Utilities
+   ───────────────────────────────────────── */
+@layer utilities {
+    /* Text Balance (for headings) */
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    /* Truncate Multi-line */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}

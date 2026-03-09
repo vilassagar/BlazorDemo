@@ -1,0 +1,59 @@
+@namespace MxUI.Core.Components
+
+<div class="@ComputedClasses" @onclick="HandleClick" @attributes="AdditionalAttributes">
+    @if (HeaderContent != null)
+    {
+        <div class="px-5 py-4 border-b border-neutral-200 @HeaderClass">
+            @HeaderContent
+        </div>
+    }
+
+    <div class="@BodyClasses">
+        @ChildContent
+    </div>
+
+    @if (FooterContent != null)
+    {
+        <div class="px-5 py-3 border-t border-neutral-100 bg-surface-muted rounded-b-xl @FooterClass">
+            @FooterContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public bool Hoverable { get; set; }
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public bool NoPadding { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? HeaderClass { get; set; }
+    [Parameter] public string? FooterClass { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string ComputedClasses
+    {
+        get
+        {
+            var baseClass = Hoverable ? "mx-card-hover" : "mx-card";
+            return $"{baseClass} {Class}";
+        }
+    }
+
+    private string BodyClasses
+    {
+        get
+        {
+            if (NoPadding) return "";
+            return Compact ? "p-3" : "p-5";
+        }
+    }
+
+    private async Task HandleClick()
+    {
+        if (OnClick.HasDelegate) await OnClick.InvokeAsync();
+    }
+}

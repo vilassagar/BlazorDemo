@@ -1,0 +1,98 @@
+@namespace MxUI.Core.Components
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="relative inline-block" id="@_containerId" @attributes="AdditionalAttributes">
+    @* Trigger *@
+    <div @onclick="Toggle">
+        @if (TriggerContent != null)
+        {
+            @TriggerContent
+        }
+        else
+        {
+            <MxButton Variant="MxButtonVariant.Outline">
+                @Label
+                <svg class="h-4 w-4 transition-transform @(_isOpen ? "rotate-180" : "")" 
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </MxButton>
+        }
+    </div>
+
+    @* Dropdown Panel *@
+    @if (_isOpen)
+    {
+        <div id="@_dropdownId"
+             class="absolute z-50 mt-1 @WidthClass bg-surface-base rounded-lg shadow-lg 
+                    border border-neutral-200 py-1 animate-slide-down @AlignmentClass"
+             role="menu">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? TriggerContent { get; set; }
+    [Parameter] public string Label { get; set; } = "Options";
+    [Parameter] public MxDropdownAlign Align { get; set; } = MxDropdownAlign.Start;
+    [Parameter] public MxDropdownWidth Width { get; set; } = MxDropdownWidth.Auto;
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool _isOpen;
+    private string _containerId = $"mx-dd-{Guid.NewGuid():N}"[..16];
+    private string _dropdownId = $"mx-ddp-{Guid.NewGuid():N}"[..16];
+    private IJSObjectReference? _module;
+    private object? _clickOutsideRef;
+
+    private string AlignmentClass => Align switch
+    {
+        MxDropdownAlign.Start => "left-0",
+        MxDropdownAlign.End => "right-0",
+        MxDropdownAlign.Center => "left-1/2 -translate-x-1/2",
+        _ => "left-0"
+    };
+
+    private string WidthClass => Width switch
+    {
+        MxDropdownWidth.Small => "w-40",
+        MxDropdownWidth.Medium => "w-56",
+        MxDropdownWidth.Large => "w-72",
+        MxDropdownWidth.Full => "w-full",
+        _ => "min-w-[12rem]"
+    };
+
+    private async Task Toggle()
+    {
+        _isOpen = !_isOpen;
+        if (_isOpen)
+        {
+            await OnOpen.InvokeAsync();
+        }
+        else
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnClickOutside()
+    {
+        _isOpen = false;
+        await OnClose.InvokeAsync();
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // Cleanup click-outside listener
+    }
+}
+
+public enum MxDropdownAlign { Start, End, Center }
+public enum MxDropdownWidth { Auto, Small, Medium, Large, Full }

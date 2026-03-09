@@ -1,0 +1,40 @@
+@using MxUI.Core.Theme
+@inject MxThemeService ThemeService
+@implements IDisposable
+
+<CascadingValue Value="ThemeService.CurrentTheme" Name="Theme">
+    <CascadingValue Value="ThemeService" Name="ThemeService">
+        <div class="mx-app @ThemeClass" data-theme="@ThemeService.CurrentTheme.Name">
+            @ChildContent
+        </div>
+    </CascadingValue>
+</CascadingValue>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public MxTheme? DefaultTheme { get; set; }
+
+    private string ThemeClass => ThemeService.CurrentTheme.Name == "dark" ? "dark" : "";
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            ThemeService.OnThemeChanged += HandleThemeChanged;
+            await ThemeService.InitializeAsync(DefaultTheme);
+            StateHasChanged();
+        }
+    }
+
+    private void HandleThemeChanged(MxTheme theme)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= HandleThemeChanged;
+    }
+}

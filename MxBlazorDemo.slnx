@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MxUI.Core/MxUI.Core.csproj" />
+  <Project Path="MxUI.Demo/MxUI.Demo.csproj" />
+</Solution>

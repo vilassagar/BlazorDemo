@@ -1,0 +1,141 @@
+@namespace MxUI.Core.Components
+@using MxUI.Core.Services
+@inject MxToastService ToastService
+@implements IDisposable
+
+<div class="fixed @PositionClasses z-[100] flex flex-col gap-2 pointer-events-none"
+     style="max-width: 380px; width: 100%;">
+    @foreach (var toast in _toasts)
+    {
+        <div class="pointer-events-auto animate-slide-up rounded-lg shadow-lg border p-4
+                    @GetToastClasses(toast.Type)">
+            <div class="flex gap-3">
+                @* Icon *@
+                <div class="flex-shrink-0 mt-0.5">
+                    @switch (toast.Type)
+                    {
+                        case MxToastType.Success:
+                            <svg class="h-5 w-5 text-success-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                            </svg>
+                            break;
+                        case MxToastType.Error:
+                            <svg class="h-5 w-5 text-danger-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                            </svg>
+                            break;
+                        case MxToastType.Warning:
+                            <svg class="h-5 w-5 text-warning-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                            </svg>
+                            break;
+                        default:
+                            <svg class="h-5 w-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+                            </svg>
+                            break;
+                    }
+                </div>
+
+                @* Content *@
+                <div class="flex-1 min-w-0">
+                    @if (!string.IsNullOrEmpty(toast.Title))
+                    {
+                        <p class="font-semibold text-sm">@toast.Title</p>
+                    }
+                    <p class="text-sm opacity-90">@toast.Message</p>
+                </div>
+
+                @* Close *@
+                <button @onclick="() => DismissToast(toast.Id)"
+                        class="flex-shrink-0 p-1 rounded hover:bg-black/10 transition-colors">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            @* Auto-dismiss progress bar *@
+            <div class="mt-2 h-0.5 rounded-full bg-black/10 overflow-hidden">
+                <div class="h-full bg-current opacity-30 rounded-full"
+                     style="animation: shrink @(toast.DurationMs)ms linear forwards;"></div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes shrink {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
+</style>
+
+@code {
+    [Parameter] public MxToastPosition Position { get; set; } = MxToastPosition.TopRight;
+    [Parameter] public int MaxToasts { get; set; } = 5;
+
+    private readonly List<MxToastMessage> _toasts = new();
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += ShowToast;
+        ToastService.OnDismiss += DismissToast;
+    }
+
+    private async void ShowToast(MxToastMessage toast)
+    {
+        await InvokeAsync(() =>
+        {
+            _toasts.Insert(0, toast);
+            
+            // Limit visible toasts
+            while (_toasts.Count > MaxToasts)
+                _toasts.RemoveAt(_toasts.Count - 1);
+
+            StateHasChanged();
+        });
+
+        // Auto-dismiss
+        _ = Task.Delay(toast.DurationMs).ContinueWith(_ =>
+            InvokeAsync(() => DismissToast(toast.Id)));
+    }
+
+    private void DismissToast(Guid id)
+    {
+        _toasts.RemoveAll(t => t.Id == id);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string PositionClasses => Position switch
+    {
+        MxToastPosition.TopRight     => "top-4 right-4",
+        MxToastPosition.TopLeft      => "top-4 left-4",
+        MxToastPosition.TopCenter    => "top-4 left-1/2 -translate-x-1/2",
+        MxToastPosition.BottomRight  => "bottom-4 right-4",
+        MxToastPosition.BottomLeft   => "bottom-4 left-4",
+        MxToastPosition.BottomCenter => "bottom-4 left-1/2 -translate-x-1/2",
+        _ => "top-4 right-4"
+    };
+
+    private string GetToastClasses(MxToastType type) => type switch
+    {
+        MxToastType.Success => "bg-surface-base border-success-600/20 text-success-700",
+        MxToastType.Error   => "bg-surface-base border-danger-500/20 text-danger-700",
+        MxToastType.Warning => "bg-surface-base border-warning-500/20 text-warning-700",
+        MxToastType.Info    => "bg-surface-base border-primary-200 text-primary-800",
+        _ => ""
+    };
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= ShowToast;
+        ToastService.OnDismiss -= DismissToast;
+    }
+}
+
+public enum MxToastPosition
+{
+    TopRight, TopLeft, TopCenter,
+    BottomRight, BottomLeft, BottomCenter
+}

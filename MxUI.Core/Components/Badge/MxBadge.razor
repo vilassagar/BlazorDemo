@@ -1,0 +1,65 @@
+@namespace MxUI.Core.Components
+
+<span class="@ComputedClasses" @attributes="AdditionalAttributes">
+    @if (DotIndicator)
+    {
+        <span class="w-1.5 h-1.5 rounded-full @DotClass"></span>
+    }
+    @ChildContent
+</span>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public MxBadgeVariant Variant { get; set; } = MxBadgeVariant.Default;
+    [Parameter] public MxBadgeSize Size { get; set; } = MxBadgeSize.Medium;
+    [Parameter] public bool DotIndicator { get; set; }
+    [Parameter] public bool Pill { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string ComputedClasses
+    {
+        get
+        {
+            var classes = new List<string> { "mx-badge" };
+
+            classes.Add(Variant switch
+            {
+                MxBadgeVariant.Primary   => "bg-primary-100 text-primary-800",
+                MxBadgeVariant.Secondary => "bg-secondary-100 text-secondary-800",
+                MxBadgeVariant.Success   => "bg-success-50 text-success-700",
+                MxBadgeVariant.Danger    => "bg-danger-50 text-danger-700",
+                MxBadgeVariant.Warning   => "bg-warning-50 text-warning-700",
+                MxBadgeVariant.Info      => "bg-primary-50 text-primary-700",
+                MxBadgeVariant.Neutral   => "bg-neutral-100 text-neutral-700",
+                _                        => "bg-neutral-100 text-neutral-600"
+            });
+
+            classes.Add(Size switch
+            {
+                MxBadgeSize.Small  => "px-1.5 py-0.5 text-[10px]",
+                MxBadgeSize.Medium => "px-2.5 py-0.5 text-xs",
+                MxBadgeSize.Large  => "px-3 py-1 text-sm",
+                _ => ""
+            });
+
+            if (!Pill) classes.Add("rounded-md");
+            if (!string.IsNullOrEmpty(Class)) classes.Add(Class);
+
+            return string.Join(" ", classes);
+        }
+    }
+
+    private string DotClass => Variant switch
+    {
+        MxBadgeVariant.Success => "bg-success-500",
+        MxBadgeVariant.Danger  => "bg-danger-500",
+        MxBadgeVariant.Warning => "bg-warning-500",
+        MxBadgeVariant.Primary => "bg-primary-500",
+        _ => "bg-neutral-400"
+    };
+}
+
+public enum MxBadgeVariant { Default, Primary, Secondary, Success, Danger, Warning, Info, Neutral }
+public enum MxBadgeSize { Small, Medium, Large }

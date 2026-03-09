@@ -1,0 +1,36 @@
+@namespace MxUI.Core.Components
+@implements IDisposable
+
+@if (_isActive)
+{
+    <div role="tabpanel" class="animate-fade-in">
+        @ChildContent
+    </div>
+}
+
+@code {
+    [CascadingParameter] public MxTabs? ParentTabs { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Icon { get; set; }
+    [Parameter] public RenderFragment? BadgeContent { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private bool _isActive;
+
+    protected override void OnInitialized()
+    {
+        ParentTabs?.RegisterTab(this);
+    }
+
+    internal void SetActive(bool active)
+    {
+        _isActive = active;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ParentTabs?.UnregisterTab(this);
+    }
+}

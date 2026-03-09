@@ -1,0 +1,211 @@
+@namespace MxUI.Core.Components
+@typeparam TItem
+
+<div class="mx-card overflow-hidden @Class">
+    @* ── Toolbar ── *@
+    @if (ToolbarContent != null || Searchable)
+    {
+        <div class="px-4 py-3 border-b border-neutral-200 flex items-center justify-between gap-3 bg-surface-muted">
+            @if (Searchable)
+            {
+                <div class="relative flex-1 max-w-sm">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-content-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" 
+                           placeholder="@SearchPlaceholder"
+                           class="mx-input pl-10 py-1.5 text-sm" 
+                           value="@_searchTerm"
+                           @oninput="HandleSearch" />
+                </div>
+            }
+            @ToolbarContent
+        </div>
+    }
+
+    @* ── Table ── *@
+    <div class="overflow-x-auto mx-scrollbar">
+        <table class="mx-table">
+            <thead>
+                <tr>
+                    @if (Selectable)
+                    {
+                        <th class="w-10 px-3">
+                            <input type="checkbox" 
+                                   class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                                   checked="@_allSelected"
+                                   @onchange="ToggleSelectAll" />
+                        </th>
+                    }
+                    @HeaderContent
+                </tr>
+            </thead>
+            <tbody>
+                @if (Loading)
+                {
+                    @for (var i = 0; i < 5; i++)
+                    {
+                        <tr>
+                            <td colspan="100">
+                                <div class="mx-skeleton h-8 w-full"></div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else if (FilteredItems == null || !FilteredItems.Any())
+                {
+                    <tr>
+                        <td colspan="100" class="text-center py-12">
+                            @if (EmptyContent != null)
+                            {
+                                @EmptyContent
+                            }
+                            else
+                            {
+                                <div class="flex flex-col items-center gap-2 text-content-muted">
+                                    <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                    </svg>
+                                    <p class="text-sm font-medium">No records found</p>
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in PagedItems)
+                    {
+                        <tr class="@(IsSelected(item) ? "bg-primary-50" : "") @RowClass?.Invoke(item)">
+                            @if (Selectable)
+                            {
+                                <td class="w-10 px-3">
+                                    <input type="checkbox"
+                                           class="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                                           checked="@IsSelected(item)"
+                                           @onchange="() => ToggleSelect(item)" />
+                                </td>
+                            }
+                            @RowContent(item)
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* ── Pagination ── *@
+    @if (Pageable && FilteredItems != null && FilteredItems.Any())
+    {
+        <div class="px-4 py-3 border-t border-neutral-200 flex items-center justify-between text-sm text-content-secondary">
+            <span>
+                Showing @((_currentPage - 1) * PageSize + 1) to @(Math.Min(_currentPage * PageSize, FilteredItems.Count()))
+                of @FilteredItems.Count() results
+            </span>
+            <div class="flex items-center gap-1">
+                <button class="px-3 py-1 rounded-md hover:bg-surface-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        disabled="@(_currentPage <= 1)"
+                        @onclick="PreviousPage">
+                    Previous
+                </button>
+
+                @for (var i = 1; i <= TotalPages; i++)
+                {
+                    var page = i;
+                    <button class="@(page == _currentPage 
+                                ? "px-3 py-1 rounded-md bg-primary-600 text-white font-medium" 
+                                : "px-3 py-1 rounded-md hover:bg-surface-muted transition-colors")"
+                            @onclick="() => GoToPage(page)">
+                        @page
+                    </button>
+                }
+
+                <button class="px-3 py-1 rounded-md hover:bg-surface-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        disabled="@(_currentPage >= TotalPages)"
+                        @onclick="NextPage">
+                    Next
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    [Parameter] public RenderFragment<TItem> RowContent { get; set; } = default!;
+    [Parameter] public RenderFragment? ToolbarContent { get; set; }
+    [Parameter] public RenderFragment? EmptyContent { get; set; }
+    [Parameter] public Func<TItem, string>? RowClass { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Searchable { get; set; }
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public Func<TItem, string, bool>? SearchFilter { get; set; }
+    [Parameter] public bool Pageable { get; set; }
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public bool Selectable { get; set; }
+    [Parameter] public EventCallback<List<TItem>> SelectedItemsChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string _searchTerm = "";
+    private int _currentPage = 1;
+    private HashSet<TItem> _selectedItems = new();
+    private bool _allSelected;
+
+    private IEnumerable<TItem> FilteredItems
+    {
+        get
+        {
+            if (Items == null) return Enumerable.Empty<TItem>();
+            if (string.IsNullOrWhiteSpace(_searchTerm) || SearchFilter == null)
+                return Items;
+            return Items.Where(item => SearchFilter(item, _searchTerm));
+        }
+    }
+
+    private IEnumerable<TItem> PagedItems
+    {
+        get
+        {
+            if (!Pageable) return FilteredItems;
+            return FilteredItems
+                .Skip((_currentPage - 1) * PageSize)
+                .Take(PageSize);
+        }
+    }
+
+    private int TotalPages => (int)Math.Ceiling((double)FilteredItems.Count() / PageSize);
+
+    private void HandleSearch(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? "";
+        _currentPage = 1;
+    }
+
+    private bool IsSelected(TItem item) => _selectedItems.Contains(item);
+
+    private async Task ToggleSelect(TItem item)
+    {
+        if (_selectedItems.Contains(item))
+            _selectedItems.Remove(item);
+        else
+            _selectedItems.Add(item);
+
+        _allSelected = _selectedItems.Count == FilteredItems.Count();
+        await SelectedItemsChanged.InvokeAsync(_selectedItems.ToList());
+    }
+
+    private async Task ToggleSelectAll(ChangeEventArgs e)
+    {
+        _allSelected = (bool)(e.Value ?? false);
+        _selectedItems = _allSelected 
+            ? new HashSet<TItem>(FilteredItems) 
+            : new HashSet<TItem>();
+        await SelectedItemsChanged.InvokeAsync(_selectedItems.ToList());
+    }
+
+    private void GoToPage(int page) => _currentPage = page;
+    private void PreviousPage() { if (_currentPage > 1) _currentPage--; }
+    private void NextPage() { if (_currentPage < TotalPages) _currentPage++; }
+}
